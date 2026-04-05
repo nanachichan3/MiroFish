@@ -1,6 +1,6 @@
 services:
   mirofish:
-    image: ghcr.io/nanachichan3/mirofish:v0.1.1-nanachi
+    image: ghcr.io/nanachichan3/mirofish:sha-889c78d
     # 加速镜像（如拉取缓慢可替换上方地址）
     # image: ghcr.nju.edu.cn/666ghj/mirofish:latest
     container_name: mirofish
