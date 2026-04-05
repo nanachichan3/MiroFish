@@ -2,9 +2,7 @@ services:
   mirofish:
     image: ghcr.io/666ghj/mirofish:latest
     container_name: mirofish
-    ports:
-      - "30010:3000"
-      - "30011:5001"
+    network_mode: host
     restart: unless-stopped
     volumes:
       - ./backend/uploads:/app/backend/uploads
