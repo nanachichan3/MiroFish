@@ -1,7 +1,7 @@
 FROM python:3.11
 
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends nodejs npm nginx \
+  && apt-get install -y --no-install-recommends curl nodejs npm nginx \
   && rm -rf /var/lib/apt/lists/*
 
 COPY --from=ghcr.io/astral-sh/uv:0.9.26 /uv /uvx /bin/
