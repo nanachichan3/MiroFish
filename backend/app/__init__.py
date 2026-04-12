@@ -68,8 +68,9 @@ def create_app(config_class=Config):
     app.register_blueprint(simulation_bp, url_prefix='/api/simulation')
     app.register_blueprint(report_bp, url_prefix='/api/report')
     
-    # 健康检查
+    # 健康检查（同时支持 /health 和 /api/health）
     @app.route('/health')
+    @app.route('/api/health')
     def health():
         return {'status': 'ok', 'service': 'MiroFish Backend'}
     

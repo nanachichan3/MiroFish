@@ -23,6 +23,8 @@ RUN cd frontend \
   && VITE_API_BASE_URL=http://localhost:5001 npm run build \
   && mv dist /usr/share/nginx/html
 
+RUN ls -la /usr/share/nginx/html/ && echo "Frontend build OK"
+
 RUN printf '%s\n' \
   'server {' \
   '    listen 80 default_server;' \
@@ -41,7 +43,7 @@ RUN printf '%s\n' \
   '    }' \
   '}' > /etc/nginx/sites-available/default
 
-RUN printf '#!/bin/bash\nnginx && cd /app/backend && uv run python run.py\n' > /start.sh && chmod +x /start.sh
+RUN printf '#!/bin/bash\nexport FLASK_DEBUG=0\nnginx && cd /app/backend && uv run python run.py\n' > /start.sh && chmod +x /start.sh
 
 EXPOSE 80 5001
 
