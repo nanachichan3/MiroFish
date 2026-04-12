@@ -20,7 +20,7 @@ COPY . .
 
 RUN cd frontend \
   && npm install \
-  && VITE_API_BASE_URL=http://localhost:5001 npm run build \
+  && VITE_API_BASE_URL=/api npm run build \
   && mv dist /usr/share/nginx/html
 
 RUN ls -la /usr/share/nginx/html/ && echo "Frontend build OK"
