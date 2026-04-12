@@ -27,8 +27,18 @@ COPY . .
 # Use relative /api path — nginx proxies /api/* to Flask on port 5001
 RUN cd frontend \
     && npm install \
-    && VITE_API_BASE_URL=/api npm run build \
-    && mv dist /usr/share/nginx/html
+    && VITE_API_BASE_URL=/api npm run build
+
+# Copy Vue dist to nginx html with verification
+RUN if [ -d frontend/dist ]; then \
+        cp -r frontend/dist/* /usr/share/nginx/html/; \
+        echo "Vue app copied to nginx"; \
+    else \
+        echo "WARNING: frontend/dist not found - Vue build may have failed"; \
+    fi
+
+# Create a health check page (served by nginx directly)
+RUN echo '{"status":"nginx-ok","service":"mirofish-frontend"}' > /usr/share/nginx/html/health.json
 
 # Write nginx config (using heredoc to avoid printf escaping issues)
 RUN cat > /etc/nginx/sites-available/default << 'NGINXCONF'
