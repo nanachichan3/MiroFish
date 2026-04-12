@@ -1,9 +1,9 @@
 FROM python:3.11
 
-# Install Node.js and nginx
+# Install Node.js, nginx, and curl (for Coolify healthcheck)
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends nodejs npm nginx \
-  && rm -rf /var/lib/apt/lists/*
+    && apt-get install -y --no-install-recommends nodejs npm nginx curl \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy uv
 COPY --from=ghcr.io/astral-sh/uv:0.9.26 /uv /uvx /bin/
@@ -17,41 +17,46 @@ COPY backend/pyproject.toml backend/uv.lock ./backend/
 
 # Install dependencies (Node + Python)
 RUN npm ci \
-  && npm ci --prefix frontend \
-  && cd backend && uv sync --frozen
+    && npm ci --prefix frontend \
+    && cd backend && uv sync --frozen
 
 # Copy source code
 COPY . .
 
 # Build Vue frontend for production
+# Use relative /api path — nginx proxies /api/* to Flask on port 5001
 RUN cd frontend \
-  && npm install \
-  && VITE_API_BASE_URL=/api npm run build \
-  && mv dist /usr/share/nginx/html
+    && npm install \
+    && VITE_API_BASE_URL=/api npm run build \
+    && mv dist /usr/share/nginx/html
 
-# Write nginx config
-RUN printf '%s\n' \
-  'server {' \
-  '    listen 80 default_server;' \
-  '    server_name _;' \
-  '    root /usr/share/nginx/html;' \
-  '    index index.html;' \
-  '' \
-  '    location / {' \
-  '        try_files $uri $uri/ /index.html;' \
-  '    }' \
-  '' \
-  '    location /api/ {' \
-  '        proxy_pass http://localhost:5001;' \
-  '        proxy_set_header Host $host;' \
-  '        proxy_set_header X-Real-IP $remote_addr;' \
-  '        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' \
-  '        proxy_set_header X-Forwarded-Proto $scheme;' \
-  '    }' \
-  '}' > /etc/nginx/sites-available/default \
-  && ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
+# Write nginx config (using heredoc to avoid printf escaping issues)
+RUN cat > /etc/nginx/sites-available/default << 'NGINXCONF'
+server {
+    listen 80 default_server;
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
 
-# Custom start script: run nginx + Flask together
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location /api/ {
+        proxy_pass http://localhost:5001;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+NGINXCONF
+
+RUN mkdir -p /etc/nginx/sites-enabled \
+    && ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default \
+    && nginx -t
+
+# Custom start script: validate nginx config, start nginx, then Flask
 RUN printf '#!/bin/bash\nnginx -t && nginx && sleep 2 && cd /app/backend && uv run python run.py\n' > /start.sh && chmod +x /start.sh
 
 EXPOSE 80 5001
