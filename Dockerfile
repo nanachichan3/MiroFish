@@ -25,25 +25,9 @@ RUN cd frontend \
 
 RUN ls -la /usr/share/nginx/html/ && echo "Frontend build OK"
 
-RUN printf '%s\n' \
-  'server {' \
-  '    listen 80 default_server;' \
-  '    server_name _;' \
-  '    root /usr/share/nginx/html;' \
-  '    index index.html;' \
-  '    location / {' \
-  '        try_files $uri $uri/ /index.html;' \
-  '    }' \
-  '    location /api/ {' \
-  '        proxy_pass http://localhost:5001;' \
-  '        proxy_set_header Host $host;' \
-  '        proxy_set_header X-Real-IP $remote_addr;' \
-  '        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' \
-  '        proxy_set_header X-Forwarded-Proto $scheme;' \
-  '    }' \
-  '}' > /etc/nginx/sites-available/default
-
-RUN printf '#!/bin/bash\nexport FLASK_DEBUG=0\nnginx && cd /app/backend && uv run python run.py\n' > /start.sh && chmod +x /start.sh
+COPY nginx.conf /etc/nginx/nginx.conf
+COPY start.sh /start.sh
+RUN chmod +x /start.sh && nginx -t
 
 EXPOSE 80 5001
 
