@@ -48,10 +48,11 @@ RUN printf '%s\n' \
   '        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' \
   '        proxy_set_header X-Forwarded-Proto $scheme;' \
   '    }' \
-  '}' > /etc/nginx/sites-available/default
+  '}' > /etc/nginx/sites-available/default \
+  && ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
 
 # Custom start script: run nginx + Flask together
-RUN printf '#!/bin/bash\nnginx && cd /app/backend && uv run python run.py\n' > /start.sh && chmod +x /start.sh
+RUN printf '#!/bin/bash\nnginx -t && nginx && sleep 2 && cd /app/backend && uv run python run.py\n' > /start.sh && chmod +x /start.sh
 
 EXPOSE 80 5001
 
